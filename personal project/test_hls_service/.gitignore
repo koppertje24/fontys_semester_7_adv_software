@@ -140,4 +140,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
-hls/
+# streaming files
+videos/*
+!videos/.gitkeep
+
+hls/*
+!hls/.gitkeep

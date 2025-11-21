@@ -426,3 +426,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# large streaming files
+Audio/*
+!Audio/.gitkeep
+
+Video/*
+!Video/.gitkeep

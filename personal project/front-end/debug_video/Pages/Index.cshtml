@@ -1,0 +1,375 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<style>
+    body {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #080908;
+        color: #DDDDDD;
+    }
+
+    .video-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    video {
+        max-width: 100%;
+        width: stretch;
+        height: auto;
+    }
+
+    audio {
+        max-width: 100%;
+        width: stretch;
+    }
+
+    .player-wrapper {
+        margin: 20px 0;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+    }
+
+    .button-group {
+        margin-bottom: 15px;
+    }
+
+        .button-group button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+            .button-group button:hover {
+                background: #e7f3ff;
+            }
+
+            .button-group button.active {
+                background: #007bff;
+                color: white;
+            }
+
+</style>
+
+
+
+
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+<div class="media-players">
+    <!-- Video Player -->
+    <div class="player-wrapper">
+        <h3>Video Player</h3>
+        <div class="button-group">
+            <button id="videoHlsBtn" class="active">HLS</button>
+            <button id="videoDashBtn">DASH</button>
+            <button id="videoRawBtn">Raw</button>
+        </div>
+        <video id="videoPlayer" controls></video>
+    </div>
+
+    <!-- Audio Player -->
+    <div class="player-wrapper">
+        <h3>Audio Player</h3>
+        <div class="button-group">
+            <button id="audioHlsBtn" class="active">HLS</button>
+            <button id="audioDashBtn">DASH</button>
+            <button id="audioRawBtn">Raw</button>
+        </div>
+        <audio id="audioPlayer" controls></audio>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+
+<script>
+    // Video Player Setup
+    const videoEl = document.getElementById('videoPlayer');
+    let videoHls = null;
+    let videoShaka = null;
+
+    async function cleanupVideo() {
+        videoEl.pause();
+
+        // Clean up Shaka FIRST (this is critical)
+        if (videoShaka) {
+            await videoShaka.unload();
+            await videoShaka.destroy();
+            videoShaka = null;
+        }
+
+        // Then clean up HLS
+        if (videoHls) {
+            videoHls.destroy();
+            videoHls = null;
+        }
+
+        // Clear the source
+        videoEl.removeAttribute('src');
+        videoEl.load();
+    }
+
+    async function initVideoHls() {
+        await cleanupVideo();
+
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const hlsSource = '/video/hls_GPU/playlist.m3u8';
+
+        if (Hls.isSupported()) {
+            videoHls = new Hls();
+            videoHls.loadSource(hlsSource);
+            videoHls.attachMedia(videoEl);
+        } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+            videoEl.src = hlsSource;
+        }
+    }
+
+    async function initVideoDash() {
+        await cleanupVideo();
+
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        videoShaka = new shaka.Player(videoEl);
+        await videoShaka.load('/video/dash_GPU/manifest.mpd').catch(function(error) {
+            console.error('Error loading DASH video:', error);
+        });
+    }
+
+    async function initVideoRaw() {
+        await cleanupVideo();
+
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const rawSource = '/Video/who.mp4';
+
+        console.log('Fetching entire file...');
+        const response = await fetch(rawSource);
+        const blob = await response.blob();
+        console.log('File loaded:', blob.size, 'bytes');
+
+        const blobUrl = URL.createObjectURL(blob);
+        videoEl.src = blobUrl;
+        videoEl.load();
+
+        // Important: Clean up blob URL when done
+        videoEl.addEventListener('ended', () => {
+            URL.revokeObjectURL(blobUrl);
+        }, { once: true });
+    }
+
+    document.getElementById('videoHlsBtn').addEventListener('click', function() {
+        initVideoHls();
+        this.classList.add('active');
+        document.getElementById('videoDashBtn').classList.remove('active');
+        document.getElementById('videoRawBtn').classList.remove('active');
+    });
+
+    document.getElementById('videoDashBtn').addEventListener('click', function() {
+        initVideoDash();
+        this.classList.add('active');
+        document.getElementById('videoHlsBtn').classList.remove('active');
+        document.getElementById('videoRawBtn').classList.remove('active');
+    });
+
+    document.getElementById('videoRawBtn').addEventListener('click', function() {
+        initVideoRaw();
+        this.classList.add('active');
+        document.getElementById('videoHlsBtn').classList.remove('active');
+        document.getElementById('videoDashBtn').classList.remove('active');
+    });
+
+    // Audio Player Setup
+    const audioEl = document.getElementById('audioPlayer');
+    let audioHls = null;
+    let audioShaka = null;
+
+    async function cleanupAudio() {
+        audioEl.pause();
+
+        // Clean up Shaka FIRST (this is critical)
+        if (audioShaka) {
+            await audioShaka.unload();
+            await audioShaka.destroy();
+            audioShaka = null;
+        }
+
+        // Then clean up HLS
+        if (audioHls) {
+            audioHls.destroy();
+            audioHls = null;
+        }
+
+        // Clear the source
+        audioEl.removeAttribute('src');
+        audioEl.load();
+
+        // Small delay to ensure cleanup is complete
+        await new Promise(resolve => setTimeout(resolve, 25));
+    }
+
+    async function initAudioHls() {
+        await cleanupAudio();
+
+        const hlsSource = '/audio/hls/playlist.m3u8';
+
+        if (Hls.isSupported()) {
+            audioHls = new Hls();
+            audioHls.loadSource(hlsSource);
+            audioHls.attachMedia(audioEl);
+        } else if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
+            audioEl.src = hlsSource;
+        }
+    }
+
+    async function initAudioDash() {
+        await cleanupAudio();
+
+        audioShaka = new shaka.Player(audioEl);
+        await audioShaka.load('/audio/dash/manifest.mpd').catch(function(error) {
+            console.error('Error loading DASH audio:', error);
+        });
+    }
+
+    async function initAudioRaw() {
+        await cleanupAudio();
+
+        const rawSource = '/audio/Golden.flac';
+
+        console.log('Fetching entire file...');
+        const response = await fetch(rawSource);
+        const blob = await response.blob();
+        console.log('File loaded:', blob.size, 'bytes');
+
+        const blobUrl = URL.createObjectURL(blob);
+        audioEl.src = blobUrl;
+        audioEl.load();
+
+        // Important: Clean up blob URL when done
+        audioEl.addEventListener('ended', () => {
+            URL.revokeObjectURL(blobUrl);
+        }, { once: true });
+    }
+
+    document.getElementById('audioHlsBtn').addEventListener('click', function() {
+        initAudioHls();
+        this.classList.add('active');
+        document.getElementById('audioDashBtn').classList.remove('active');
+        document.getElementById('audioRawBtn').classList.remove('active');
+    });
+
+    document.getElementById('audioDashBtn').addEventListener('click', function() {
+        initAudioDash();
+        this.classList.add('active');
+        document.getElementById('audioHlsBtn').classList.remove('active');
+        document.getElementById('audioRawBtn').classList.remove('active');
+    });
+
+    document.getElementById('audioRawBtn').addEventListener('click', function() {
+        initAudioRaw();
+        this.classList.add('active');
+        document.getElementById('audioDashBtn').classList.remove('active');
+        document.getElementById('audioHlsBtn').classList.remove('active');
+
+    });
+
+    // Initialize with HLS by default
+    initVideoHls();
+    initAudioHls();
+</script>
+
+
+@* <div class="video-wrapper">
+    HSL
+    <video id="video1" controls></video>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        var video = document.getElementById('video1');
+        var hls = new Hls();
+        hls.loadSource('/video/hls/playlist.m3u8');
+        hls.attachMedia(video);
+    </script>
+</div>
+
+<div class="video-wrapper">
+    HSL GPU
+    <video id="video2" controls></video>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        var video = document.getElementById('video2');
+        var hls = new Hls();
+        hls.loadSource('/video/hls_GPU/playlist.m3u8');
+        hls.attachMedia(video);
+    </script>
+</div>
+
+<div class="video-wrapper">
+    HSL song
+    <audio id="song1" controls></audio>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        var video = document.getElementById('song1');
+        var hls = new Hls();
+        hls.loadSource('/audio/hls/playlist.m3u8');
+        hls.attachMedia(video);
+    </script>
+</div>
+
+<div class="video-wrapper">
+    DASH
+    <video id="video4" controls></video>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script>
+        var video = document.getElementById('video4');
+        var player = new shaka.Player(video);
+        player.load('/video/dash/manifest.mpd');    
+    </script>
+</div>
+
+<div class="video-wrapper">
+    DASH GPU
+    <video id="video5" controls></video>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script>
+        var video = document.getElementById('video5');
+        var player = new shaka.Player(video);
+        player.load('/video/dash_GPU/manifest.mpd');
+    </script>
+</div>
+
+<div class="video-wrapper">
+    DASH song
+    <audio id="song2" controls></audio>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script>
+        var video = document.getElementById('song2');
+        var player = new shaka.Player(video);
+        player.load('/audio/dash/manifest.mpd');
+    </script>
+</div> *@
