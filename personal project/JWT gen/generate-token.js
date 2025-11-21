@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 
 // CONFIGURATION - Update these values
 const CONFIG = {
-    iss: 'bSOBEpPX4RLjSDkXij3X7QqmjpNJ6Jem', // Must match Kong consumer's JWT key
-    secret: 'GPce1zSX20RBZLXi44MCmZaztYIxsTcF',         // Must match Kong consumer's JWT secret
+    iss: env.ISS, // Must match Kong consumer's JWT key
+    secret: env.SECRET,         // Must match Kong consumer's JWT secret
     expiryHours: 1                     // Token valid for 1 hour
 };
 
