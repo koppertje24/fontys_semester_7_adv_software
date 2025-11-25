@@ -1,4 +1,6 @@
-version: '1.0'
+version: '1.2'
+
+name: personal_project
 
 services:
   # PostgreSQL database for Kong
@@ -58,6 +60,7 @@ services:
       - "8444:8444"   # Admin API (HTTPS)
     networks:
       - kong-net
+      - back-network
     depends_on:
       kong-database:
         condition: service_healthy
@@ -69,6 +72,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # Kong Decker to sync configuration
+  deck-sync:
+    image: kong/deck:latest
+    container_name: deck-sync
+    command: gateway sync /deck/kong.yaml --kong-addr http://kong-gateway:8001
+    volumes:
+      - ./kong.yaml:/deck/kong.yaml
+    networks:
+      - kong-net
+    depends_on:
+      kong:
+        condition: service_healthy
+    restart: on-failure
+
   konga:
     image: pantsel/konga:latest
     container_name: konga
@@ -78,12 +95,24 @@ services:
       - "1337:1337"
     networks:
       - kong-net
+      - back-network
     depends_on:
       kong:
         condition: service_healthy
 
+  hls-backend:
+    build:
+      context: ./test_hls_service
+    container_name: hls-backend
+    ports:
+      - "3000:3000"
+    networks:
+      - back-network
+
 networks:
   kong-net:
+    driver: bridge
+  back-network:
     driver: bridge
 
 volumes:

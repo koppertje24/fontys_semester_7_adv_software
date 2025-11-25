@@ -3,8 +3,8 @@ const jwt = require('jsonwebtoken');
 
 // CONFIGURATION - Update these values
 const CONFIG = {
-    iss: env.ISS, // Must match Kong consumer's JWT key
-    secret: env.SECRET,         // Must match Kong consumer's JWT secret
+    iss: "env iss or JWT key", // Must match Kong consumer's JWT key
+    secret: "env secret or JWT secret",         // Must match Kong consumer's JWT secret
     expiryHours: 1                     // Token valid for 1 hour
 };
 

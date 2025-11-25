@@ -29,7 +29,7 @@ const verifyToken = (req, res, next) => {
 
   try {
     // Verify token (replace with your actual secret/public key)
-    const decoded = jwt.verify(token, "see_env_file"); // TODO: make it use the env file
+    const decoded = jwt.verify(token, "JWT-secret see env"); // TODO: make it use the env file
     req.user = decoded;
     next();
   } catch (err) {
@@ -92,6 +92,17 @@ app.post('/api/upload', verifyToken, express.json(), async (req, res) => {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Failed to process video' });
   }
+});
+
+app.get('/vid/:videoId', verifyToken, (req, res) => {
+  const { videoId } = req.params;
+  const manifestPath = path.join(VIDEO_DIR, videoId);
+
+  if (!fs.existsSync(manifestPath)) {
+    return res.status(404).json({ error: 'Video not found' });
+  }
+
+  res.sendFile(manifestPath);
 });
 
 // API: Serve HLS manifest (protected)

@@ -111,6 +111,8 @@
     let videoHls = null;
     let videoShaka = null;
 
+    const token = "JWL-token";
+
     async function cleanupVideo() {
         videoEl.pause();
 
@@ -138,10 +140,15 @@
         // Small delay to ensure cleanup is complete
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        const hlsSource = '/video/hls_GPU/playlist.m3u8';
+        
+        const hlsSource = 'http://localhost:8000/hls/video1/index.m3u8';
 
         if (Hls.isSupported()) {
-            videoHls = new Hls();
+            videoHls = new Hls({
+                xhrSetup: function(xhr, url) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                }
+            });
             videoHls.loadSource(hlsSource);
             videoHls.attachMedia(videoEl);
         } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
@@ -163,25 +170,40 @@
 
     async function initVideoRaw() {
         await cleanupVideo();
-
-        // Small delay to ensure cleanup is complete
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        const rawSource = '/Video/who.mp4';
+        const videoId = 'who.mp4';
+        const gatewayUrl = 'http://localhost:8000/vid/' + videoId;
 
-        console.log('Fetching entire file...');
-        const response = await fetch(rawSource);
-        const blob = await response.blob();
-        console.log('File loaded:', blob.size, 'bytes');
+        console.log('Fetching entire video file...');
 
-        const blobUrl = URL.createObjectURL(blob);
-        videoEl.src = blobUrl;
-        videoEl.load();
+        try {
+            const response = await fetch(gatewayUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        // Important: Clean up blob URL when done
-        videoEl.addEventListener('ended', () => {
-            URL.revokeObjectURL(blobUrl);
-        }, { once: true });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            console.log('File receaved from server');
+            const blob = await response.blob();
+            console.log('File loaded:', blob.size, 'bytes');
+
+            const blobUrl = URL.createObjectURL(blob);
+            videoEl.src = blobUrl;
+            videoEl.load();
+
+            // Clean up blob URL when done
+            videoEl.addEventListener('ended', () => {
+                URL.revokeObjectURL(blobUrl);
+            }, { once: true });
+
+        } catch (error) {
+            console.error('Error fetching video:', error);
+        }
     }
 
     document.getElementById('videoHlsBtn').addEventListener('click', function() {
@@ -237,10 +259,14 @@
     async function initAudioHls() {
         await cleanupAudio();
 
-        const hlsSource = '/audio/hls/playlist.m3u8';
+        const hlsSource = 'http://localhost:8000/hls/song1/index.m3u8';
 
         if (Hls.isSupported()) {
-            audioHls = new Hls();
+            audioHls = new Hls({
+                xhrSetup: function(xhr, url) {
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                }
+            });
             audioHls.loadSource(hlsSource);
             audioHls.attachMedia(audioEl);
         } else if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
@@ -260,21 +286,38 @@
     async function initAudioRaw() {
         await cleanupAudio();
 
-        const rawSource = '/audio/Golden.flac';
+        const songId = 'Golden.flac';
+        const gatewayUrl = 'http://localhost:8000/vid/' + songId;
 
-        console.log('Fetching entire file...');
-        const response = await fetch(rawSource);
-        const blob = await response.blob();
-        console.log('File loaded:', blob.size, 'bytes');
+        console.log('Fetching entire music file...');
 
-        const blobUrl = URL.createObjectURL(blob);
-        audioEl.src = blobUrl;
-        audioEl.load();
+        try {
+            const response = await fetch(gatewayUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        // Important: Clean up blob URL when done
-        audioEl.addEventListener('ended', () => {
-            URL.revokeObjectURL(blobUrl);
-        }, { once: true });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            console.log('File receaved from server');
+            const blob = await response.blob();
+            console.log('File loaded:', blob.size, 'bytes');
+
+            const blobUrl = URL.createObjectURL(blob);
+            audioEl.src = blobUrl;
+            audioEl.load();
+
+            // Clean up blob URL when done
+            audioEl.addEventListener('ended', () => {
+                URL.revokeObjectURL(blobUrl);
+            }, { once: true });
+
+        } catch (error) {
+            console.error('Error fetching audio:', error);
+        }
     }
 
     document.getElementById('audioHlsBtn').addEventListener('click', function() {
