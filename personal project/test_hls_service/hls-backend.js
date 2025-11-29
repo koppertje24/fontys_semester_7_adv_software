@@ -7,18 +7,18 @@ const jwt = require('jsonwebtoken');
 const app = express();
 const PORT = 3000;
 
-// Directories
+// Directories for storing videos and HLS output
 const VIDEO_DIR = path.join(__dirname, 'videos');
 const HLS_DIR = path.join(__dirname, 'hls');
 
-// Ensure directories exist
+// Ensure directories exist or storing videos and HLS output
 [VIDEO_DIR, HLS_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
 
-// Middleware: Verify JWT token from gateway
+// Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
@@ -28,7 +28,7 @@ const verifyToken = (req, res, next) => {
   }
 
   try {
-    // Verify token (replace with your actual secret/public key)
+    // Verify token or throw error
     const decoded = jwt.verify(token, "JWT-secret see env"); // TODO: make it use the env file
     req.user = decoded;
     next();
@@ -37,7 +37,7 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-// CORS headers (adjust for your gateway)
+// CORS headers
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -45,13 +45,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Convert video to HLS format
+// Convert video to HLS format using ffmpeg
 const convertToHLS = (inputPath, outputDir, videoId) => {
   return new Promise((resolve, reject) => {
     const outputPath = path.join(outputDir, videoId, 'index.m3u8');
     const segmentPath = path.join(outputDir, videoId, 'segment_%03d.ts');
 
-    // Create video-specific directory
+    // Create video-specific directory if it exist
     const videoDir = path.join(outputDir, videoId);
     if (!fs.existsSync(videoDir)) {
       fs.mkdirSync(videoDir, { recursive: true });
@@ -72,7 +72,7 @@ const convertToHLS = (inputPath, outputDir, videoId) => {
   });
 };
 
-// API: Upload and convert video to HLS
+// Upload and convert video to HLS using POST /api/upload
 app.post('/api/upload', verifyToken, express.json(), async (req, res) => {
   try {
     const { videoPath, videoId } = req.body;
@@ -84,6 +84,7 @@ app.post('/api/upload', verifyToken, express.json(), async (req, res) => {
     // Convert to HLS
     await convertToHLS(videoPath, HLS_DIR, videoId);
     
+    // Respond with manifest URL
     res.json({ 
       success: true, 
       manifestUrl: `/hls/${videoId}/index.m3u8` 
@@ -94,6 +95,7 @@ app.post('/api/upload', verifyToken, express.json(), async (req, res) => {
   }
 });
 
+// serve original video
 app.get('/vid/:videoId', verifyToken, (req, res) => {
   const { videoId } = req.params;
   const manifestPath = path.join(VIDEO_DIR, videoId);
@@ -105,7 +107,7 @@ app.get('/vid/:videoId', verifyToken, (req, res) => {
   res.sendFile(manifestPath);
 });
 
-// API: Serve HLS manifest (protected)
+// Serve HLS manifest using GET /hls/:videoId/index.m3u8
 app.get('/hls/:videoId/index.m3u8', verifyToken, (req, res) => {
   const { videoId } = req.params;
   const manifestPath = path.join(HLS_DIR, videoId, 'index.m3u8');
@@ -118,7 +120,7 @@ app.get('/hls/:videoId/index.m3u8', verifyToken, (req, res) => {
   res.sendFile(manifestPath);
 });
 
-// API: Serve HLS segments (protected)
+// Serve HLS segments using GET /hls/:videoId/:segment
 app.get('/hls/:videoId/:segment', verifyToken, (req, res) => {
   const { videoId, segment } = req.params;
   const segmentPath = path.join(HLS_DIR, videoId, segment);
@@ -131,12 +133,12 @@ app.get('/hls/:videoId/:segment', verifyToken, (req, res) => {
   res.sendFile(segmentPath);
 });
 
-// Health check
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'hls-backend' });
 });
 
-// Start server
+// Start server and listen on specified port
 app.listen(PORT, () => {
   console.log(`HLS Backend running on port ${PORT}`);
   console.log(`Video directory: ${VIDEO_DIR}`);

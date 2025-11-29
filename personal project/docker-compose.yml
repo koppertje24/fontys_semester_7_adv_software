@@ -3,7 +3,7 @@ version: '1.2'
 name: personal_project
 
 services:
-  # PostgreSQL database for Kong
+  # een PostgreSQL database for Kong om routes and configurations op te slaan
   kong-database:
     image: postgres:13
     container_name: kong-database
@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Run Kong migrations
+  # Run Kong migrations om de database te initialiseren
   kong-migration:
     image: kong:latest
     container_name: kong-migration
@@ -38,7 +38,7 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # Kong Gateway
+  # de Kong Gateway service zelf die API requests afhandelt
   kong:
     image: kong:latest
     container_name: kong-gateway
@@ -54,10 +54,10 @@ services:
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: http://localhost:8002
     ports:
-      - "8000:8000"   # Proxy port (HTTP)
-      - "8443:8443"   # Proxy port (HTTPS)
-      - "8001:8001"   # Admin API
-      - "8444:8444"   # Admin API (HTTPS)
+      - "8000:8000"   # de Proxy port (HTTP)
+      - "8443:8443"   # de Proxy port (HTTPS)
+      - "8001:8001"   # de Admin API
+      - "8444:8444"   # de Admin API (HTTPS)
     networks:
       - kong-net
       - back-network
@@ -72,7 +72,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Kong Decker to sync configuration
+  # Kong Decker voor de sync configuratie naar en van Kong Gateway
   deck-sync:
     image: kong/deck:latest
     container_name: deck-sync
@@ -86,6 +86,7 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  # Konga, een webgebaseerde GUI voor het beheren van Kong
   konga:
     image: pantsel/konga:latest
     container_name: konga
@@ -100,6 +101,7 @@ services:
       kong:
         condition: service_healthy
 
+  # een test backend service die door Kong kan worded beheerd
   hls-backend:
     build:
       context: ./test_hls_service
@@ -109,11 +111,13 @@ services:
     networks:
       - back-network
 
+# netwerken voor isolatie tussen de buiten api en de services
 networks:
   kong-net:
     driver: bridge
   back-network:
     driver: bridge
 
+# volumes voor het persistent opslaan van de database data
 volumes:
   kong-db-data:
