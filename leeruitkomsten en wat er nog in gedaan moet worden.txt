@@ -1,0 +1,48 @@
+leeruitkomsten en wat er nog in gedaan moet worden
+
+LO1:
+
+- kijken of er verbertering is of er andere mensen even veel invloed hebben binnen het project.
+
+LO2:
+
+- meer feedback halen bij docenten, en opschrijven.
+
+LO3:
+
+- code invullen in een document om feedback op te halen en bewijslast te zijn.
+- GitHub link gebruiken?
+- "Keuken" -> "code"
+- kan ik laten zien dat mijn project schaalbaar is, met autoschaalen met kubernetter bijvoorbeeld.
+- doe een verdieping in kubernetters gateways om het kan verbetered worden.
+- vergeet niet te valideren dat het opschaalt en downschaalt.
+
+LO4:
+
+- bewijs voor docker, git en CI/CD
+- concrete neerzetten wat je gaat doen en laat controleren.
+
+LO5:
+
+- concrete neerzetten wat je gaat doen en laat controleren.
+- onderzoek van de groep benoemen en er een mening over geven.
+- weet dat het kan, en vertel wat de voordelen en nadelen kunnen zijn.
+- implementer functie as a service, met onderzoek naar wat er voor nodig is en waarom het gebruikt kan worden.
+- pak nog twee andere van https://landscape.cncf.io/ om te proberen, met onderzoeken.
+- denk aan welk abonoment er nodig is voor een (non)functional requirement moet hebben.
+- tip van sander: kijk naar iets wat interesand is, meest gedaande cloud is een database en RabbitMQ.
+
+LO6:
+
+- concrete neerzetten wat je gaat doen en laat controleren.
+- onderzoeken wat security by design is.
+- kijken waar de security problemen liggen en of ze opgelost kunnen worden.
+
+LO7:
+
+- concrete neerzetten wat je gaat doen en laat controleren.
+- meer ontwerp en analyse laten zien.
+- dat stuk met de data, meer dan msql/postgress
+- klein beetje verstand van de avg binnen de GDPR.
+	- is er privacy gevoelige data?
+	- hoe word de data correct overgestuurd.
