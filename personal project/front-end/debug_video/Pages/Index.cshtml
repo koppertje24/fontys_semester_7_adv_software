@@ -68,17 +68,13 @@
 
 </style>
 
-
-
-
-
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
     <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
 </div>
 
 <div class="media-players">
-    <!-- Video Player -->
+    <!-- Video Player, for videos to test larger file trensfer -->
     <div class="player-wrapper">
         <h3>Video Player</h3>
         <div class="button-group">
@@ -89,7 +85,7 @@
         <video id="videoPlayer" controls></video>
     </div>
 
-    <!-- Audio Player -->
+    <!-- Audio Player, for songs -->
     <div class="player-wrapper">
         <h3>Audio Player</h3>
         <div class="button-group">
@@ -111,8 +107,7 @@
     let videoHls = null;
     let videoShaka = null;
 
-    const token = "JWL-token";
-
+    const token = "JWT_token"
     async function cleanupVideo() {
         videoEl.pause();
 
@@ -135,10 +130,14 @@
     }
 
     async function initVideoHls() {
+        
         await cleanupVideo();
 
         // Small delay to ensure cleanup is complete
         await new Promise(resolve => setTimeout(resolve, 100));
+
+        // start timer for validation after cleanup to ensure fare play
+        console.time('initVideoHls');
 
         
         const hlsSource = 'http://localhost:8000/hls/video1/index.m3u8';
@@ -154,6 +153,9 @@
         } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
             videoEl.src = hlsSource;
         }
+
+        // stop timer for validation
+        console.timeEnd('initVideoHls');
     }
 
     async function initVideoDash() {
@@ -162,17 +164,26 @@
         // Small delay to ensure cleanup is complete
         await new Promise(resolve => setTimeout(resolve, 100));
 
+        // start timer for validation after cleanup to ensure fare play
+        console.time('initVideoDash');
+
         videoShaka = new shaka.Player(videoEl);
         await videoShaka.load('/video/dash_GPU/manifest.mpd').catch(function(error) {
             console.error('Error loading DASH video:', error);
         });
+
+        // stop timer for validation
+        console.timeEnd('initVideoDash');
     }
 
     async function initVideoRaw() {
         await cleanupVideo();
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        const videoId = 'who.mp4';
+        // start timer for validation after cleanup to ensure fare play
+        console.time('initVideoRaw');
+
+        const videoId = 'video1.mp4';
         const gatewayUrl = 'http://localhost:8000/vid/' + videoId;
 
         console.log('Fetching entire video file...');
@@ -200,10 +211,16 @@
             videoEl.addEventListener('ended', () => {
                 URL.revokeObjectURL(blobUrl);
             }, { once: true });
+            // stop timer for validation
+            console.timeEnd('initVideoRaw');
 
         } catch (error) {
             console.error('Error fetching video:', error);
+            // stop timer for validation
+            console.timeEnd('initVideoRaw');
         }
+
+        
     }
 
     document.getElementById('videoHlsBtn').addEventListener('click', function() {
@@ -259,6 +276,9 @@
     async function initAudioHls() {
         await cleanupAudio();
 
+        // start timer for validation after cleanup to ensure fare play
+        console.time('initAudioHls');
+
         const hlsSource = 'http://localhost:8000/hls/song1/index.m3u8';
 
         if (Hls.isSupported()) {
@@ -272,21 +292,33 @@
         } else if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
             audioEl.src = hlsSource;
         }
+
+        // stop timer for validation
+        console.timeEnd('initAudioHls');
     }
 
     async function initAudioDash() {
         await cleanupAudio();
 
+        // start timer for validation after cleanup to ensure fare play
+        console.time('initAudioDash');
+
         audioShaka = new shaka.Player(audioEl);
         await audioShaka.load('/audio/dash/manifest.mpd').catch(function(error) {
             console.error('Error loading DASH audio:', error);
         });
+
+        // stop timer for validation
+        console.timeEnd('initAudioDash');
     }
 
     async function initAudioRaw() {
         await cleanupAudio();
 
-        const songId = 'Golden.flac';
+        // start timer for validation after cleanup to ensure fare play
+        console.time('initAudioRaw');
+
+        const songId = 'song1.flac';
         const gatewayUrl = 'http://localhost:8000/vid/' + songId;
 
         console.log('Fetching entire music file...');
@@ -318,6 +350,9 @@
         } catch (error) {
             console.error('Error fetching audio:', error);
         }
+
+        // stop timer for validation
+        console.timeEnd('initAudioRaw');
     }
 
     document.getElementById('audioHlsBtn').addEventListener('click', function() {
