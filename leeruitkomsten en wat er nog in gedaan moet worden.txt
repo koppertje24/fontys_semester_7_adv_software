@@ -12,7 +12,6 @@ LO3:
 
 - code invullen in een document om feedback op te halen en bewijslast te zijn.
 - GitHub link gebruiken?
-- "Keuken" -> "code"
 - kan ik laten zien dat mijn project schaalbaar is, met autoschaalen met kubernetter bijvoorbeeld.
 - doe een verdieping in kubernetters gateways om het kan verbetered worden.
 - vergeet niet te valideren dat het opschaalt en downschaalt.
