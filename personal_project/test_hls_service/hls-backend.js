@@ -18,25 +18,6 @@ const HLS_DIR = path.join(__dirname, 'hls');
   }
 });
 
-// Middleware to verify JWT token
-const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({ error: 'No token provided' });
-  }
-
-  try {
-    // Verify token or throw error
-    const decoded = jwt.verify(token, "JWT-secret see env"); // TODO: make it use the env file
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(403).json({ error: 'Invalid token', error_context: err});
-  }
-};
-
 // CORS headers
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -73,7 +54,7 @@ const convertToHLS = (inputPath, outputDir, videoId) => {
 };
 
 // Upload and convert video to HLS using POST /api/upload
-app.post('/api/upload', verifyToken, express.json(), async (req, res) => {
+app.post('/api/upload', express.json(), async (req, res) => {
   try {
     const { videoPath, videoId } = req.body;
     
@@ -96,7 +77,7 @@ app.post('/api/upload', verifyToken, express.json(), async (req, res) => {
 });
 
 // serve original video
-app.get('/vid/:videoId', verifyToken, (req, res) => {
+app.get('/vid/:videoId', (req, res) => {
   const { videoId } = req.params;
   const manifestPath = path.join(VIDEO_DIR, videoId);
 
@@ -108,7 +89,7 @@ app.get('/vid/:videoId', verifyToken, (req, res) => {
 });
 
 // Serve HLS manifest using GET /hls/:videoId/index.m3u8
-app.get('/hls/:videoId/index.m3u8', verifyToken, (req, res) => {
+app.get('/hls/:videoId/index.m3u8', (req, res) => {
   const { videoId } = req.params;
   const manifestPath = path.join(HLS_DIR, videoId, 'index.m3u8');
 
@@ -121,7 +102,7 @@ app.get('/hls/:videoId/index.m3u8', verifyToken, (req, res) => {
 });
 
 // Serve HLS segments using GET /hls/:videoId/:segment
-app.get('/hls/:videoId/:segment', verifyToken, (req, res) => {
+app.get('/hls/:videoId/:segment', (req, res) => {
   const { videoId, segment } = req.params;
   const segmentPath = path.join(HLS_DIR, videoId, segment);
 
