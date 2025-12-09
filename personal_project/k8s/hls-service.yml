@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
       - name: hls-backend
-        image: REGISTRY_PLACEHOLDER/hls-backend:IMAGE_TAG_PLACEHOLDER
+        image: koppertje24/hls-backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000
