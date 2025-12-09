@@ -58,7 +58,6 @@ metadata:
   name: hls-backend
   namespace: hls-backend
 spec:
-  type: NodePort
   selector:
     app: hls-backend
   ports:
@@ -66,7 +65,7 @@ spec:
     port: 3000
     targetPort: 3000
     nodePort: 30001
-  type: ClusterIP
+  type: NodePort
 
 ---
 apiVersion: autoscaling/v2
