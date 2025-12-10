@@ -7,11 +7,14 @@ const rabbitmq = require('./rabbitmq-connect');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+let rabbitmqconnection = null
+
 // Directories for storing videos and HLS output
 const VIDEO_DIR = path.join(__dirname, 'videos');
 const HLS_DIR = path.join(__dirname, 'hls');
 
-const rabbitmqconnection = null
+console.log('video dir:', VIDEO_DIR);
+console.log('hls dir:', HLS_DIR);
 
 // Ensure directories exist or storing videos and HLS output
 [VIDEO_DIR, HLS_DIR].forEach(dir => {
@@ -122,7 +125,7 @@ app.get('/health', (req, res) => {
 });
 
 // Readiness check endpoint
-let isReady = true; // This can be toggled based on actual readiness checks
+let isReady = false;
 app.get('/ready', (req, res) => {
   if (isReady) {
     res.status(200).json({ status: 'ready' });
@@ -134,16 +137,16 @@ app.get('/ready', (req, res) => {
 async function initializeServices() {
   try {
     console.log('Connecting to RabbitMQ...');
-    rabbitmqconnection = await rabbitmq.connect();
+    rabbitmqconnection = await rabbitmq.connectToRabbitMQ();
     isReady = true;
     console.log('Connected to RabbitMQ');
     console.log('Service initialized successfully');
     
-    // first consume messages as an example of functionality
-    await rabbitmq.consumeMessages('my-queue', async (message) => {
-      console.log('Received message:', message);
-      // Process your message here, for later, this is just a placeholder
-    });
+    // // first consume messages as an example of functionality
+    // await rabbitmq.consumeMessages('my-queue', async (message) => {
+    //   console.log('Received message:', message);
+    //   // Process your message here, for later, this is just a placeholder
+    // });
 
   } catch (error) {
     console.error('Failed to initialize services:', error);
