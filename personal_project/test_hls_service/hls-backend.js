@@ -2,14 +2,16 @@ const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
-const jwt = require('jsonwebtoken');
+const rabbitmq = require('./rabbitmq-connect');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Directories for storing videos and HLS output
 const VIDEO_DIR = path.join(__dirname, 'videos');
 const HLS_DIR = path.join(__dirname, 'hls');
+
+const rabbitmqconnection = null
 
 // Ensure directories exist or storing videos and HLS output
 [VIDEO_DIR, HLS_DIR].forEach(dir => {
@@ -119,9 +121,56 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'hls-backend' });
 });
 
+// Readiness check endpoint
+let isReady = true; // This can be toggled based on actual readiness checks
+app.get('/ready', (req, res) => {
+  if (isReady) {
+    res.status(200).json({ status: 'ready' });
+  } else {
+    res.status(503).json({ status: 'not ready' });
+  }
+});
+
+async function initializeServices() {
+  try {
+    console.log('Connecting to RabbitMQ...');
+    rabbitmqconnection = await rabbitmq.connect();
+    isReady = true;
+    console.log('Connected to RabbitMQ');
+    console.log('Service initialized successfully');
+    
+    // first consume messages as an example of functionality
+    await rabbitmq.consumeMessages('my-queue', async (message) => {
+      console.log('Received message:', message);
+      // Process your message here, for later, this is just a placeholder
+    });
+
+  } catch (error) {
+    console.error('Failed to initialize services:', error);
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received, closing connections...');
+  await rabbitmq.disconnectFromRabbitMQ(rabbitmqconnection.connection);
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('SIGINT received, closing connections...');
+  await rabbitmq.disconnectFromRabbitMQ(rabbitmqconnection.connection);
+  process.exit(0);
+});
+
 // Start server and listen on specified port
 app.listen(PORT, () => {
   console.log(`HLS Backend running on port ${PORT}`);
+  console.log(`connected to rabbitmq`);
   console.log(`Video directory: ${VIDEO_DIR}`);
   console.log(`HLS output directory: ${HLS_DIR}`);
+  initializeServices();
 });
+
+
