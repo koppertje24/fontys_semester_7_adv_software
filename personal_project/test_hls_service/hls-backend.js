@@ -1,27 +1,79 @@
+
 const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const multer = require("multer");
 const rabbitmq = require('./rabbitmq-connect');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-let rabbitmqconnection = null
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
-// Directories for storing videos and HLS output
-const VIDEO_DIR = path.join(__dirname, 'videos');
-const HLS_DIR = path.join(__dirname, 'hls');
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
-console.log('video dir:', VIDEO_DIR);
-console.log('hls dir:', HLS_DIR);
+const s3 = new S3Client({
+  region: "us-east-1",
+  endpoint: "IP_ADDRESS:9000", // MinIO server address
+  forcePathStyle: true,  // REQUIRED for MinIO
+  credentials: {
+    accessKeyId: "ACCESSKEY",
+    secretAccessKey: "SECRETACCESSKEY",
+  },
+});
 
-// Ensure directories exist or storing videos and HLS output
-[VIDEO_DIR, HLS_DIR].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+const s3Bucket = "mybucket";
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
+  }),
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      "video/mp4",
+      "video/mpeg",
+      "audio/flac",
+      "audio/x-flac",
+      "application/octet-stream",
+      "audio/mpeg",
+      "audio/wav"
+    ];
+    if (allowedTypes.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("Invalid file type"));
   }
 });
+
+const TEMP_DIR = path.join(os.tmpdir(), 'hls-processing');
+
+let rabbitmqconnection = null
+
+// // test database connection
+// async function upload() {
+//   const data = Buffer.from("Hello from Node.js + MinIO!");
+
+//   const command = new PutObjectCommand({
+//     Bucket: "mybucket",
+//     Key: "hello.txt",
+//     Body: data,
+//   });
+
+//   await s3.send(command);
+//   console.log("Uploaded to MinIO!");
+// }
+// // ending test database connection
+
+// Ensure directories exist or storing videos and HLS output
+// [VIDEO_DIR, HLS_DIR].forEach(dir => {
+//   if (!fs.existsSync(dir)) {
+//     fs.mkdirSync(dir, { recursive: true });
+//   }
+// });
 
 // CORS headers
 app.use((req, res, next) => {
@@ -34,41 +86,96 @@ app.use((req, res, next) => {
 // Convert video to HLS format using ffmpeg
 const convertToHLS = (inputPath, outputDir, videoId) => {
   return new Promise((resolve, reject) => {
-    const outputPath = path.join(outputDir, videoId, 'index.m3u8');
-    const segmentPath = path.join(outputDir, videoId, 'segment_%03d.ts');
-
-    // Create video-specific directory if it exist
     const videoDir = path.join(outputDir, videoId);
+
+    const outputPath = path.join(videoDir, 'index.m3u8');
+    const segmentPath = path.join(videoDir, 'segment_%03d.ts');
+
     if (!fs.existsSync(videoDir)) {
       fs.mkdirSync(videoDir, { recursive: true });
     }
 
-    ffmpeg(inputPath)
+    console.log(`Converting ${inputPath} to HLS at ${videoDir}`);
+
+    ffmpeg(inputPath, { timeout: 432000 })
+      .audioCodec("aac")             // HLS compatible audio codec
+      .audioChannels(2)
+      .audioBitrate("128k")
+      .audioFrequency(48000)         // Match input sample rate
+      .audioFilter("aformat=sample_rates=48000")
+      .format("hls")               
       .outputOptions([
-        '-codec: copy',
-        '-start_number 0',
-        '-hls_time 10',
-        '-hls_list_size 0',
-        '-f hls'
+        "-vn",                       // no video stream (audio only)
+        "-hls_time 10",
+        "-hls_list_size 0",
+        "-hls_segment_type mpegts",
+        `-hls_segment_filename ${segmentPath}`,
+        "-hls_flags independent_segments"
       ])
       .output(outputPath)
-      .on('end', () => resolve(outputPath))
-      .on('error', (err) => reject(err))
+      .on("start", (cmdline) => {
+        console.log("FFmpeg command:", cmdline);
+      })
+      .on("progress", (progress) => {
+        console.log(`Processing: ${progress.percent}% done`);
+      })
+      .on("end", () => {
+        console.log("Conversion finished");
+        resolve(videoDir);
+      })
+      .on("error", (err, stdout, stderr) => {
+        console.error("FFmpeg error:", err);
+        console.error("FFmpeg stderr:", stderr);
+        console.error("FFmpeg stdout:", stdout);
+        reject(err);
+      })
       .run();
   });
 };
 
+
+const uploadFolderToMinIO = async (folderPath, bucket, prefix) => {
+  const files = fs.readdirSync(folderPath);
+
+  for (const file of files) {
+    const fullPath = path.join(folderPath, file);
+    const fileContent = fs.readFileSync(fullPath);
+
+    await s3.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: `${prefix}/${file}`,
+      Body: fileContent,
+      ContentType: file.endsWith('.ts') 
+        ? 'video/mp2t' 
+        : file.endsWith('.m3u8')
+        ? 'application/vnd.apple.mpegurl'
+        : undefined
+    }));
+  }
+};
+
 // Upload and convert video to HLS using POST /api/upload
-app.post('/api/upload', express.json(), async (req, res) => {
+app.post('/api/upload', upload.single("video"), async (req, res) => {
   try {
-    const { videoPath, videoId } = req.body;
+    const file = req.file;
+    const videoId = req.body.videoId;
+
+    if (!file) {
+      return res.status(400).json({ error: "Missing video file" });
+    }
     
-    if (!videoPath || !videoId) {
-      return res.status(400).json({ error: 'Missing videoPath or videoId' });
+    if (!videoId) {
+      return res.status(400).json({ error: "Missing videoId" });
     }
 
+    // Local temp path where multer saved the file
+    const videoPath = file.path;
+
     // Convert to HLS
-    await convertToHLS(videoPath, HLS_DIR, videoId);
+    const hlsOutputFolder = await convertToHLS(videoPath, TEMP_DIR, videoId);
+
+    // Upload to MinIO
+    await uploadFolderToMinIO(hlsOutputFolder, s3Bucket, `hls/${videoId}`);
     
     // Respond with manifest URL
     res.json({ 
@@ -80,6 +187,17 @@ app.post('/api/upload', express.json(), async (req, res) => {
     res.status(500).json({ error: 'Failed to process video' });
   }
 });
+
+// Function to retrieve object from S3
+const retrievingFromS3 = async (bucket, key) => {
+  const command = new GetObjectCommand({
+    Bucket: bucket,
+    Key: key,
+  });
+
+  const response = await s3.send(command);
+  return response.Body;
+}
 
 // serve original video
 app.get('/vid/:videoId', (req, res) => {
@@ -94,29 +212,37 @@ app.get('/vid/:videoId', (req, res) => {
 });
 
 // Serve HLS manifest using GET /hls/:videoId/index.m3u8
-app.get('/hls/:videoId/index.m3u8', (req, res) => {
+app.get('/hls/:videoId/index.m3u8', async (req, res) => {
   const { videoId } = req.params;
-  const manifestPath = path.join(HLS_DIR, videoId, 'index.m3u8');
+  const s3Key = `hls/${videoId}/index.m3u8`;
 
-  if (!fs.existsSync(manifestPath)) {
-    return res.status(404).json({ error: 'Video not found' });
+  try {
+    const response = await retrievingFromS3(s3Bucket, s3Key);
+    
+    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+    response.pipe(res);
+
+  } catch (error) {
+    console.error('Error retrieving from S3:', error);
+    res.status(404).json({ error: 'Video not found' });
   }
-
-  res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-  res.sendFile(manifestPath);
 });
 
 // Serve HLS segments using GET /hls/:videoId/:segment
-app.get('/hls/:videoId/:segment', (req, res) => {
+app.get('/hls/:videoId/:segment', async (req, res) => {
   const { videoId, segment } = req.params;
-  const segmentPath = path.join(HLS_DIR, videoId, segment);
+  const s3Key = `hls/${videoId}/${segment}`;
 
-  if (!fs.existsSync(segmentPath)) {
-    return res.status(404).json({ error: 'Segment not found' });
+  try {
+    const response = await retrievingFromS3(s3Bucket, s3Key);
+    
+    res.setHeader('Content-Type', 'video/MP2T');
+    response.pipe(res);
+
+  } catch (error) {
+    console.error('Error retrieving from S3:', error);
+    res.status(404).json({ error: 'Video not found' });
   }
-
-  res.setHeader('Content-Type', 'video/MP2T');
-  res.sendFile(segmentPath);
 });
 
 // Health check endpoint
@@ -171,8 +297,6 @@ process.on('SIGINT', async () => {
 app.listen(PORT, () => {
   console.log(`HLS Backend running on port ${PORT}`);
   console.log(`connected to rabbitmq`);
-  console.log(`Video directory: ${VIDEO_DIR}`);
-  console.log(`HLS output directory: ${HLS_DIR}`);
   initializeServices();
 });
 
