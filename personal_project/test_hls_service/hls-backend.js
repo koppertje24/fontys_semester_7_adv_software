@@ -1,12 +1,12 @@
-
 const express = require('express');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { S3Client, PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
 const multer = require("multer");
+
 const rabbitmq = require('./rabbitmq-connect');
+const database = require('./s3-bucket-connect');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,18 +16,6 @@ const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
-
-const s3 = new S3Client({
-  region: "us-east-1",
-  endpoint: "IP_ADDRESS:9000", // MinIO server address
-  forcePathStyle: true,  // REQUIRED for MinIO
-  credentials: {
-    accessKeyId: "ACCESSKEY",
-    secretAccessKey: "SECRETACCESSKEY",
-  },
-});
-
-const s3Bucket = "mybucket";
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -42,7 +30,8 @@ const upload = multer({
       "audio/x-flac",
       "application/octet-stream",
       "audio/mpeg",
-      "audio/wav"
+      "audio/wav",
+      "audio/mp3"
     ];
     if (allowedTypes.includes(file.mimetype)) cb(null, true);
     else cb(new Error("Invalid file type"));
@@ -50,30 +39,6 @@ const upload = multer({
 });
 
 const TEMP_DIR = path.join(os.tmpdir(), 'hls-processing');
-
-let rabbitmqconnection = null
-
-// // test database connection
-// async function upload() {
-//   const data = Buffer.from("Hello from Node.js + MinIO!");
-
-//   const command = new PutObjectCommand({
-//     Bucket: "mybucket",
-//     Key: "hello.txt",
-//     Body: data,
-//   });
-
-//   await s3.send(command);
-//   console.log("Uploaded to MinIO!");
-// }
-// // ending test database connection
-
-// Ensure directories exist or storing videos and HLS output
-// [VIDEO_DIR, HLS_DIR].forEach(dir => {
-//   if (!fs.existsSync(dir)) {
-//     fs.mkdirSync(dir, { recursive: true });
-//   }
-// });
 
 // CORS headers
 app.use((req, res, next) => {
@@ -133,27 +98,6 @@ const convertToHLS = (inputPath, outputDir, videoId) => {
   });
 };
 
-
-const uploadFolderToMinIO = async (folderPath, bucket, prefix) => {
-  const files = fs.readdirSync(folderPath);
-
-  for (const file of files) {
-    const fullPath = path.join(folderPath, file);
-    const fileContent = fs.readFileSync(fullPath);
-
-    await s3.send(new PutObjectCommand({
-      Bucket: bucket,
-      Key: `${prefix}/${file}`,
-      Body: fileContent,
-      ContentType: file.endsWith('.ts') 
-        ? 'video/mp2t' 
-        : file.endsWith('.m3u8')
-        ? 'application/vnd.apple.mpegurl'
-        : undefined
-    }));
-  }
-};
-
 // Upload and convert video to HLS using POST /api/upload
 app.post('/api/upload', upload.single("video"), async (req, res) => {
   try {
@@ -175,7 +119,7 @@ app.post('/api/upload', upload.single("video"), async (req, res) => {
     const hlsOutputFolder = await convertToHLS(videoPath, TEMP_DIR, videoId);
 
     // Upload to MinIO
-    await uploadFolderToMinIO(hlsOutputFolder, s3Bucket, `hls/${videoId}`);
+    await database.uploadFolder(hlsOutputFolder, `hls/${videoId}`);
     
     // Respond with manifest URL
     res.json({ 
@@ -187,17 +131,6 @@ app.post('/api/upload', upload.single("video"), async (req, res) => {
     res.status(500).json({ error: 'Failed to process video' });
   }
 });
-
-// Function to retrieve object from S3
-const retrievingFromS3 = async (bucket, key) => {
-  const command = new GetObjectCommand({
-    Bucket: bucket,
-    Key: key,
-  });
-
-  const response = await s3.send(command);
-  return response.Body;
-}
 
 // serve original video
 app.get('/vid/:videoId', (req, res) => {
@@ -217,7 +150,7 @@ app.get('/hls/:videoId/index.m3u8', async (req, res) => {
   const s3Key = `hls/${videoId}/index.m3u8`;
 
   try {
-    const response = await retrievingFromS3(s3Bucket, s3Key);
+    const response = await database.retrievingFromS3(s3Key);
     
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     response.pipe(res);
@@ -234,7 +167,7 @@ app.get('/hls/:videoId/:segment', async (req, res) => {
   const s3Key = `hls/${videoId}/${segment}`;
 
   try {
-    const response = await retrievingFromS3(s3Bucket, s3Key);
+    const response = await database.retrievingFromS3(s3Key);
     
     res.setHeader('Content-Type', 'video/MP2T');
     response.pipe(res);
@@ -262,10 +195,13 @@ app.get('/ready', (req, res) => {
 
 async function initializeServices() {
   try {
+    console.log('Connecting to S3...');
+    await database.connectToS3();
+    console.log('Connected to S3');
     console.log('Connecting to RabbitMQ...');
-    rabbitmqconnection = await rabbitmq.connectToRabbitMQ();
-    isReady = true;
+    await rabbitmq.connectToRabbitMQ();
     console.log('Connected to RabbitMQ');
+    isReady = true;
     console.log('Service initialized successfully');
     
     // // first consume messages as an example of functionality
@@ -283,13 +219,13 @@ async function initializeServices() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing connections...');
-  await rabbitmq.disconnectFromRabbitMQ(rabbitmqconnection.connection);
+  await rabbitmq.disconnectFromRabbitMQ();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received, closing connections...');
-  await rabbitmq.disconnectFromRabbitMQ(rabbitmqconnection.connection);
+  await rabbitmq.disconnectFromRabbitMQ();
   process.exit(0);
 });
 
