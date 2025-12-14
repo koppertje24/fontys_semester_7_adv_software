@@ -279,7 +279,8 @@
         // start timer for validation after cleanup to ensure fare play
         console.time('initAudioHls');
 
-        const hlsSource = 'http://localhost:8000/hls/song1/index.m3u8';
+        //const hlsSource = 'http://localhost:8000/hls/song1/index.m3u8';
+        const hlsSource = 'http://192.168.10.196:3000/hls/test4/index.m3u8';
 
         if (Hls.isSupported()) {
             audioHls = new Hls({
