@@ -108,6 +108,12 @@ services:
       - "3000:3000"
     networks:
       - back-network
+    environment:
+    - RABBITMQ_URL=amqp://localhost
+    - S3_DATABASE_ENDPOINT=localhost:9000 
+    - S3_ACCESS_KEY=your_access_key
+    - S3_SECRET_KEY=your_secret_key
+    - S3_BUCKET=mybucket
 
 # netwerken voor isolatie tussen de buiten api en de services
 networks:

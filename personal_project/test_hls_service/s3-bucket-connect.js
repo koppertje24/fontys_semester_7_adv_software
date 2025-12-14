@@ -4,11 +4,11 @@ const { S3Client, PutObjectCommand, GetObjectCommand, ListBucketsCommand } = req
 
 const s3Config = {
   region: "us-east-1",
-  endpoint: process.env.S3_DATABASE_ENDPOINT || "IP_ADDRESS:9000",
+  endpoint: process.env.S3_DATABASE_ENDPOINT,
   forcePathStyle: true,
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY || "ACCESSKEY",
-    secretAccessKey: process.env.S3_SECRET_KEY || "SECRETACCESSKEY",
+    accessKeyId: process.env.S3_ACCESS_KEY,
+    secretAccessKey: process.env.S3_SECRET_KEY,
   },
 };
 
