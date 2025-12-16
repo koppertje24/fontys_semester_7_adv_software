@@ -1,10 +1,11 @@
 const amqp = require('amqplib');
+const mm = require("music-metadata");
 
 // Get connection URL from environment variable
 const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://localhost';
 
-const vidoeupdateChannelQueue = process.env.VIDEO_UPDATE_CHANNEL || 'hls_updates';
-const filepathChannelQueue = process.env.FILEPATH_CHANNEL || 'filepath_channel';
+const vidoecreateChannelQueue = process.env.VIDEO_CREATE_CHANNEL || 'video_create';
+const vidoeupdateChannelQueue = process.env.VIDEO_UPDATE_CHANNEL || 'video_updates';
 
 let connection = null;
 let channel = null;
@@ -16,6 +17,11 @@ async function connectToRabbitMQ() {
             if (error1) {
             throw error1;
             }
+
+            // create a queue for video creates
+            channel.assertQueue(vidoecreateChannelQueue, { 
+            durable: false
+            });
 
             // create a queue for video updates
             channel.assertQueue(vidoeupdateChannelQueue, { 
@@ -33,14 +39,38 @@ async function connectToRabbitMQ() {
     }
 }
 
-function sendUpdate(message) {
-    channel.sendToQueue(vidoeupdateChannelQueue, Buffer.from(message));
-    console.log(" [x] Sent %s to buffer %a", message, vidoeupdateChannelQueue);
+async function getAudioInfoCreate(videoId, file, status="") {
+  const metadata = await mm.parseFile(file.path);
+
+  return JSON.stringify({
+    id: videoId,
+    status: status,
+    name: metadata.common.title || file.originalname,
+    artist: metadata.common.artist || "Unknown Artist",
+    album: metadata.common.album || "Unknown Album",
+    genre: metadata.common.genre?.[0] || "Unknown Genre",
+    duration: Math.round(metadata.format.duration || 0),
+    year: metadata.common.year || "Unknown Year"
+  });
 }
 
-function sendFilepath(message) {
-    channel.sendToQueue(filepathChannelQueue, Buffer.from(message));
-    console.log(" [x] Sent %s to buffer %a", message, filepathChannelQueue);
+async function getAudioInfoUpdate(videoId, status="") {
+  return JSON.stringify({
+    id: videoId,
+    status: status,
+  });
+}
+
+async function sendCreate(videoId, file) {
+    let message = await getAudioInfoCreate(videoId, file, "processing");
+    channel.sendToQueue(vidoecreateChannelQueue, Buffer.from(message));
+    console.log(" [x] Sent %s to buffer %a", message, vidoecreateChannelQueue);
+}
+
+async function sendUpdate(videoId, status="processed") {
+    let message = await getAudioInfoUpdate(videoId, status);
+    channel.sendToQueue(vidoeupdateChannelQueue, Buffer.from(message));
+    console.log(" [x] Sent %s to buffer %a", message, vidoeupdateChannelQueue);
 }
 
 async function disconnectFromRabbitMQ() {
@@ -54,4 +84,4 @@ async function disconnectFromRabbitMQ() {
     } 
 }
 
-module.exports = { connectToRabbitMQ, disconnectFromRabbitMQ, sendUpdate, sendFilepath };
+module.exports = { connectToRabbitMQ, disconnectFromRabbitMQ, sendCreate, sendUpdate, sendFilepath };

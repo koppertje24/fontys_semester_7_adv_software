@@ -79,7 +79,6 @@
         <h3>Video Player</h3>
         <div class="button-group">
             <button id="videoHlsBtn" class="active">HLS</button>
-            <button id="videoDashBtn">DASH</button>
             <button id="videoRawBtn">Raw</button>
         </div>
         <video id="videoPlayer" controls></video>
@@ -90,7 +89,6 @@
         <h3>Audio Player</h3>
         <div class="button-group">
             <button id="audioHlsBtn" class="active">HLS</button>
-            <button id="audioDashBtn">DASH</button>
             <button id="audioRawBtn">Raw</button>
         </div>
         <audio id="audioPlayer" controls></audio>
@@ -107,7 +105,7 @@
     let videoHls = null;
     let videoShaka = null;
 
-    const Minikube = false;
+    const Minikube = true;
 
     const token = "JWT_token"
     async function cleanupVideo() {
@@ -164,24 +162,6 @@
 
         // stop timer for validation
         console.timeEnd('initVideoHls');
-    }
-
-    async function initVideoDash() {
-        await cleanupVideo();
-
-        // Small delay to ensure cleanup is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // start timer for validation after cleanup to ensure fare play
-        console.time('initVideoDash');
-
-        videoShaka = new shaka.Player(videoEl);
-        await videoShaka.load('/video/dash_GPU/manifest.mpd').catch(function(error) {
-            console.error('Error loading DASH video:', error);
-        });
-
-        // stop timer for validation
-        console.timeEnd('initVideoDash');
     }
 
     async function initVideoRaw() {
@@ -242,14 +222,6 @@
     document.getElementById('videoHlsBtn').addEventListener('click', function() {
         initVideoHls();
         this.classList.add('active');
-        document.getElementById('videoDashBtn').classList.remove('active');
-        document.getElementById('videoRawBtn').classList.remove('active');
-    });
-
-    document.getElementById('videoDashBtn').addEventListener('click', function() {
-        initVideoDash();
-        this.classList.add('active');
-        document.getElementById('videoHlsBtn').classList.remove('active');
         document.getElementById('videoRawBtn').classList.remove('active');
     });
 
@@ -257,7 +229,6 @@
         initVideoRaw();
         this.classList.add('active');
         document.getElementById('videoHlsBtn').classList.remove('active');
-        document.getElementById('videoDashBtn').classList.remove('active');
     });
 
     // Audio Player Setup
@@ -321,21 +292,6 @@
         console.timeEnd('initAudioHls');
     }
 
-    async function initAudioDash() {
-        await cleanupAudio();
-
-        // start timer for validation after cleanup to ensure fare play
-        console.time('initAudioDash');
-
-        audioShaka = new shaka.Player(audioEl);
-        await audioShaka.load('/audio/dash/manifest.mpd').catch(function(error) {
-            console.error('Error loading DASH audio:', error);
-        });
-
-        // stop timer for validation
-        console.timeEnd('initAudioDash');
-    }
-
     async function initAudioRaw() {
         await cleanupAudio();
 
@@ -390,21 +346,12 @@
     document.getElementById('audioHlsBtn').addEventListener('click', function() {
         initAudioHls();
         this.classList.add('active');
-        document.getElementById('audioDashBtn').classList.remove('active');
-        document.getElementById('audioRawBtn').classList.remove('active');
-    });
-
-    document.getElementById('audioDashBtn').addEventListener('click', function() {
-        initAudioDash();
-        this.classList.add('active');
-        document.getElementById('audioHlsBtn').classList.remove('active');
         document.getElementById('audioRawBtn').classList.remove('active');
     });
 
     document.getElementById('audioRawBtn').addEventListener('click', function() {
         initAudioRaw();
         this.classList.add('active');
-        document.getElementById('audioDashBtn').classList.remove('active');
         document.getElementById('audioHlsBtn').classList.remove('active');
 
     });
@@ -413,73 +360,3 @@
     initVideoHls();
     initAudioHls();
 </script>
-
-
-@* <div class="video-wrapper">
-    HSL
-    <video id="video1" controls></video>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        var video = document.getElementById('video1');
-        var hls = new Hls();
-        hls.loadSource('/video/hls/playlist.m3u8');
-        hls.attachMedia(video);
-    </script>
-</div>
-
-<div class="video-wrapper">
-    HSL GPU
-    <video id="video2" controls></video>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        var video = document.getElementById('video2');
-        var hls = new Hls();
-        hls.loadSource('/video/hls_GPU/playlist.m3u8');
-        hls.attachMedia(video);
-    </script>
-</div>
-
-<div class="video-wrapper">
-    HSL song
-    <audio id="song1" controls></audio>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        var video = document.getElementById('song1');
-        var hls = new Hls();
-        hls.loadSource('/audio/hls/playlist.m3u8');
-        hls.attachMedia(video);
-    </script>
-</div>
-
-<div class="video-wrapper">
-    DASH
-    <video id="video4" controls></video>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
-    <script>
-        var video = document.getElementById('video4');
-        var player = new shaka.Player(video);
-        player.load('/video/dash/manifest.mpd');    
-    </script>
-</div>
-
-<div class="video-wrapper">
-    DASH GPU
-    <video id="video5" controls></video>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
-    <script>
-        var video = document.getElementById('video5');
-        var player = new shaka.Player(video);
-        player.load('/video/dash_GPU/manifest.mpd');
-    </script>
-</div>
-
-<div class="video-wrapper">
-    DASH song
-    <audio id="song2" controls></audio>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
-    <script>
-        var video = document.getElementById('song2');
-        var player = new shaka.Player(video);
-        player.load('/audio/dash/manifest.mpd');
-    </script>
-</div> *@

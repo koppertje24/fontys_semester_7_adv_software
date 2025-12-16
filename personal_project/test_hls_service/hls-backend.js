@@ -112,15 +112,22 @@ app.post('/api/upload', upload.single("video"), async (req, res) => {
       return res.status(400).json({ error: "Missing videoId" });
     }
 
+    // Send message to RabbitMQ about new video
+    await rabbitmq.sendCreate(videoId, file);
+
     // Local temp path where multer saved the file
     const videoPath = file.path;
 
     // Convert to HLS
     const hlsOutputFolder = await convertToHLS(videoPath, TEMP_DIR, videoId);
 
+    await rabbitmq.sendUpdate(videoId, "processed");
+
     // Upload to MinIO
     await database.uploadFolder(hlsOutputFolder, `hls/${videoId}`);
-    
+
+    await rabbitmq.sendUpdate(videoId, "completed");
+
     // Respond with manifest URL
     res.json({ 
       success: true, 

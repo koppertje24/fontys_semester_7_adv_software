@@ -115,13 +115,55 @@ services:
     - S3_SECRET_KEY=your_secret_key
     - S3_BUCKET=mybucket
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - search-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  search-service:
+    build:
+      context: ./search_service
+      dockerfile: Dockerfile
+    container_name: search-service
+    ports:
+      - "3010:3010"
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - search-network
+      - back-network
+
 # netwerken voor isolatie tussen de buiten api en de services
 networks:
   kong-net:
     driver: bridge
   back-network:
     driver: bridge
+  search-network:
+    driver: bridge
 
 # volumes voor het persistent opslaan van de database data
 volumes:
   kong-db-data:
+  es_data:
+    driver: local
