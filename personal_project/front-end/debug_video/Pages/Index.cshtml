@@ -107,6 +107,8 @@
     let videoHls = null;
     let videoShaka = null;
 
+    const Minikube = false;
+
     const token = "JWT_token"
     async function cleanupVideo() {
         videoEl.pause();
@@ -139,8 +141,14 @@
         // start timer for validation after cleanup to ensure fare play
         console.time('initVideoHls');
 
-        
-        const hlsSource = 'http://localhost:8000/hls/video1/index.m3u8';
+        let hlsSource = null;
+
+        if (Minikube){
+            hlsSource = 'http://192.168.10.196:3000/hls/video1/index.m3u8';
+        }
+        else {
+            hlsSource = 'http://localhost:3000/hls/video1/index.m3u8';
+        }
 
         if (Hls.isSupported()) {
             videoHls = new Hls({
@@ -183,8 +191,16 @@
         // start timer for validation after cleanup to ensure fare play
         console.time('initVideoRaw');
 
-        const videoId = 'video1.mp4';
-        const gatewayUrl = 'http://localhost:8000/vid/' + videoId;
+        const videoId = 'who.mp4';
+
+        let gatewayUrl = null;
+
+        if (Minikube){
+            gatewayUrl = 'http://192.168.10.196:3000/vid/' + videoId;
+        }
+        else {
+            gatewayUrl = 'http://localhost:3000/vid/' + videoId;
+        }
 
         console.log('Fetching entire video file...');
 
@@ -279,8 +295,15 @@
         // start timer for validation after cleanup to ensure fare play
         console.time('initAudioHls');
 
-        //const hlsSource = 'http://localhost:8000/hls/song1/index.m3u8';
-        const hlsSource = 'http://192.168.10.196:3000/hls/test4/index.m3u8';
+        let hlsSource = null;
+
+        if (Minikube){
+            hlsSource = 'http://192.168.10.196:3000/hls/test1/index.m3u8';
+        }
+        else {
+            hlsSource = 'http://localhost:3000/hls/test1/index.m3u8';
+        }
+        
 
         if (Hls.isSupported()) {
             audioHls = new Hls({
@@ -319,8 +342,16 @@
         // start timer for validation after cleanup to ensure fare play
         console.time('initAudioRaw');
 
-        const songId = 'song1.flac';
-        const gatewayUrl = 'http://localhost:8000/vid/' + songId;
+        const songId = 'Golden.flac';
+
+        let gatewayUrl = null;
+
+        if (Minikube){
+            gatewayUrl = 'http://192.168.10.196:3000/vid/' + songId;
+        }
+        else {
+            gatewayUrl = 'http://localhost:3000/vid/' + songId;
+        }
 
         console.log('Fetching entire music file...');
 

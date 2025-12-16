@@ -133,15 +133,19 @@ app.post('/api/upload', upload.single("video"), async (req, res) => {
 });
 
 // serve original video
-app.get('/vid/:videoId', (req, res) => {
+app.get('/vid/:videoId', async (req, res) => {
   const { videoId } = req.params;
-  const manifestPath = path.join(VIDEO_DIR, videoId);
+  const s3Key = `raw/${videoId}`;
 
-  if (!fs.existsSync(manifestPath)) {
-    return res.status(404).json({ error: 'Video not found' });
+  try {
+    const response = await database.retrievingFromS3(s3Key);
+    
+    response.pipe(res);
+
+  } catch (error) {
+    console.error('Error retrieving from S3:', error);
+    res.status(404).json({ error: 'Video not found' });
   }
-
-  res.sendFile(manifestPath);
 });
 
 // Serve HLS manifest using GET /hls/:videoId/index.m3u8
