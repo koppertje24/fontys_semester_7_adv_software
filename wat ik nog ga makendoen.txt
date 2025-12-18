@@ -9,6 +9,8 @@ wat ik nog ga maken/doen:
 
 - vermeld dat je horizontal scaling architectuur hebt gebruikt in LO3 en waarom dat n het ontwerp past.
 
+- vermeld het design van de message queue.
+
 //LO4
 - kijken naar wat er nodig voor de projecten om een devops omgeving te realizeren. Hoe ga je bijvoorbeeld ook met operations om.
 
@@ -19,13 +21,13 @@ wat ik nog ga maken/doen:
 - bedenk een manier om te valideren hoe je de non-requirements van de architectuur controleer in LO4
 
 // LO5
-- schrijf een document met cloud diensten die gebruikt kunnen worden en wat daarmee het voordeel/nadeel is, wat de prijs verschil is, en welke je kiest.
-
-- praat met Sander erover.
+- vull het document aan met een copje voor mijn project, en zeg wat het bewijst aan het einden.
 
 // LO6
 - laat met 2-3 scenarios zien dat de veiligheid gewaarborgt wordt in het project.
 
+schrijf 2 documenten voor een usecase en benoem wat het doen, de beveilegings problemen en de Patricks lifecycle om te benoemen hoe je het kan verhelpen.
+
 
 // LO7
-- beschijf de opzet van de databases, en verwerk het in een bestand die het kan laten zien.
+- beschijf de opzet van de databases (persistant storage), en verwerk het in een bestand die het kan laten zien.
