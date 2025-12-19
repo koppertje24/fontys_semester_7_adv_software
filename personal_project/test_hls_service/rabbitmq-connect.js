@@ -84,4 +84,4 @@ async function disconnectFromRabbitMQ() {
     } 
 }
 
-module.exports = { connectToRabbitMQ, disconnectFromRabbitMQ, sendCreate, sendUpdate, sendFilepath };
+module.exports = { connectToRabbitMQ, disconnectFromRabbitMQ, sendCreate, sendUpdate };

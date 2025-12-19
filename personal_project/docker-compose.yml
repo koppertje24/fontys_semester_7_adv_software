@@ -116,7 +116,7 @@ services:
     - S3_BUCKET=mybucket
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.3
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -124,7 +124,7 @@ services:
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
-      - "9300:9300"
+      # - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
     networks:
