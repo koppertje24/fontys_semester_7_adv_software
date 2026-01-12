@@ -3,25 +3,25 @@ wat ik nog ga maken/doen:
 - een document opstellen die in het kort mijn werkwijzen beschrijft, uitlegt waarom ik iets heb gekozen, wat het doel is, wat requirements zijn, en wat de uitslagen zijn daarvan in het kort.
 
 // LO3
-- zet het experiment/test van schaalbaarheid in het portfolio onder LO3
+- [done, nog niet in canvas] zet het experiment/test van schaalbaarheid in het portfolio onder LO3
 
-- vermeld waar de kwaliteitscriteria op zijn gebaseerd.
+- [done, nog niet in canvas] vermeld waar de kwaliteitscriteria op zijn gebaseerd.
 
-- vermeld dat je horizontal scaling architectuur hebt gebruikt in LO3 en waarom dat n het ontwerp past.
+- [done, nog niet in canvas] vermeld dat je horizontal scaling architectuur hebt gebruikt in LO3 en waarom dat n het ontwerp past.
 
-- vermeld het design van de message queue.
+- [done, nog niet in canvas] vermeld het design van de message queue.
 
 //LO4
 - kijken naar wat er nodig voor de projecten om een devops omgeving te realizeren. Hoe ga je bijvoorbeeld ook met operations om.
 
-- kijken naar welke tools er gebruikt kan worden binnen het consept DevOps
+- kijken naar welke tools er gebruikt kan worden binnen het consept DevOps.
 
-- meer opschrijven dan alleen versiebeheer onder realizatie in LO4.
+- [done] meer opschrijven dan alleen versiebeheer onder realizatie in LO4.
 
-- bedenk een manier om te valideren hoe je de non-requirements van de architectuur controleer in LO4
+- bedenk een manier om te valideren hoe je de non-requirements van de architectuur controleer in LO4.
 
 // LO5
-- vull het document aan met een copje voor mijn project, en zeg wat het bewijst aan het einden.
+- [done] vull het document aan met een copje voor mijn project, en zeg wat het bewijst aan het einden.
 
 // LO6
 - laat met 2-3 scenarios zien dat de veiligheid gewaarborgt wordt in het project.
@@ -30,4 +30,4 @@ schrijf 2 documenten voor een usecase en benoem wat het doen, de beveilegings pr
 
 
 // LO7
-- beschijf de opzet van de databases (persistant storage), en verwerk het in een bestand die het kan laten zien.
+- [done] beschijf de opzet van de databases (persistant storage), en verwerk het in een bestand die het kan laten zien.
