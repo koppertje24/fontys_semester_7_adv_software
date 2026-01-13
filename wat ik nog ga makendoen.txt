@@ -11,6 +11,8 @@ wat ik nog ga maken/doen:
 
 - [done, nog niet in canvas] vermeld het design van de message queue.
 
+- (low prio) vermelden welke Functionele requirement bij welke message queue. functional requirement, en verwijs naar de verbindingen
+
 //LO4
 - kijken naar wat er nodig voor de projecten om een devops omgeving te realizeren. Hoe ga je bijvoorbeeld ook met operations om.
 
@@ -20,8 +22,12 @@ wat ik nog ga maken/doen:
 
 - bedenk een manier om te valideren hoe je de non-requirements van de architectuur controleer in LO4.
 
+- (high prio) opschrijven wat je bijhoud in ops, zoals CPU, RAM en GPU omdat dat het hooft system is.
+
 // LO5
 - [done] vull het document aan met een copje voor mijn project, en zeg wat het bewijst aan het einden.
+
+- (low prio) verwijs naar welke functionele requerements vast zitten aan het Dit bewijst kopje 
 
 // LO6
 - laat met 2-3 scenarios zien dat de veiligheid gewaarborgt wordt in het project.
@@ -31,3 +37,5 @@ schrijf 2 documenten voor een usecase en benoem wat het doen, de beveilegings pr
 
 // LO7
 - [done] beschijf de opzet van de databases (persistant storage), en verwerk het in een bestand die het kan laten zien.
+
+- (low prio) verwijs naar welke functionele requerements vast zitten aan het Dit bewijst kopje 

@@ -24,22 +24,20 @@ public class SongService {
 
     public String createSong(Song song) throws IOException {
         song.setCreatedAt(System.currentTimeMillis());
-        
+
         IndexResponse response = client.index(i -> i
-            .index(SONGS_INDEX)
-            .id(song.getId())
-            .document(song)
-        );
+                .index(SONGS_INDEX)
+                .id(song.getId())
+                .document(song));
 
         return response.id();
     }
 
     public Song getSong(String id) throws IOException {
         GetResponse<Song> response = client.get(g -> g
-            .index(SONGS_INDEX)
-            .id(id),
-            Song.class
-        );
+                .index(SONGS_INDEX)
+                .id(id),
+                Song.class);
 
         if (response.found()) {
             Song song = response.source();
@@ -55,13 +53,12 @@ public class SongService {
         updates.put("updated_at", System.currentTimeMillis());
 
         UpdateResponse<Song> response = client.update(u -> u
-            .index(SONGS_INDEX)
-            .id(updateMessage.getId())
-            .doc(updates),
-            Song.class
-        );
+                .index(SONGS_INDEX)
+                .id(updateMessage.getId())
+                .doc(updates),
+                Song.class);
 
-        System.out.println("Updated song: " + updateMessage.getId() + 
-                         " with status: " + updateMessage.getStatus());
+        System.out.println("Updated song: " + updateMessage.getId() +
+                " with status: " + updateMessage.getStatus());
     }
 }

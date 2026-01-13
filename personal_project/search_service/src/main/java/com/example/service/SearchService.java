@@ -18,29 +18,22 @@ public class SearchService {
 
     public com.example.model.SearchResponse search(String index, String query) throws IOException {
         SearchResponse<Object> response = client.search(s -> s
-            .index(index)
-            .query(q -> q
-                .bool(b -> b
-                    .should(sh -> sh
-                        .match(m -> m
-                            .field("name")
-                            .query(query)
-                        )
-                    )
-                    .should(sh -> sh
-                        .match(m -> m
-                            .field("description")
-                            .query(query)
-                        )
-                    )
-                )
-            ),
-            Object.class
-        );
+                .index(index)
+                .query(q -> q
+                        .bool(b -> b
+                                .should(sh -> sh
+                                        .match(m -> m
+                                                .field("name")
+                                                .query(query)))
+                                .should(sh -> sh
+                                        .match(m -> m
+                                                .field("description")
+                                                .query(query))))),
+                Object.class);
 
         List<Object> results = response.hits().hits().stream()
-            .map(Hit::source)
-            .collect(Collectors.toList());
+                .map(Hit::source)
+                .collect(Collectors.toList());
 
         long totalHits = response.hits().total().value();
 
